@@ -12,6 +12,7 @@ import {
   QrCode, Brain, Layers, School, Stethoscope, Sparkles, Building2, Languages, X,
 } from "lucide-react";
 
+import { Analytics } from "@vercel/analytics/react";
 /* ---------------------------------------------------------------------- */
 /* Static reference data                                                   */
 /* ---------------------------------------------------------------------- */
@@ -2573,6 +2574,7 @@ export default function App() {
           </PageTransition>
           <Footer setPage={setPage} />
         </div>
+        <Analytics />
       </LanguageContext.Provider>
     </ThemeContext.Provider>
   );
