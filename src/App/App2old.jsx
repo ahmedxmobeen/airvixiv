@@ -16,7 +16,7 @@ import {
 /* Static reference data                                                   */
 /* ---------------------------------------------------------------------- */
 
-const SITE_URL = (typeof window !== "undefined" && window.location && window.location.href) || "https://airvixiv.vercel.app/";
+const SITE_URL = (typeof window !== "undefined" && window.location && window.location.href) || "https://airvibe.pk";
 
 const CITIES = [
   { name: "Lahore", lat: 31.5497, lon: 74.3436, primaryPollutant: "PM2.5" },
@@ -249,6 +249,16 @@ const KNOWN_AREAS = [
   { name: "Hayatabad, Peshawar", lat: 34.0, lon: 71.45 },
 ];
 
+const SENSITIVE_SITES = [
+  { name: "Lahore Grammar School", type: "school", lat: 31.51, lon: 74.35 },
+  { name: "Services Hospital, Lahore", type: "hospital", lat: 31.56, lon: 74.31 },
+  { name: "Aga Khan University Hospital", type: "hospital", lat: 24.89, lon: 67.08 },
+  { name: "Karachi Grammar School", type: "school", lat: 24.83, lon: 67.02 },
+  { name: "PIMS Hospital, Islamabad", type: "hospital", lat: 33.71, lon: 73.06 },
+  { name: "Islamabad Model College", type: "school", lat: 33.66, lon: 73.03 },
+  { name: "Lady Reading Hospital, Peshawar", type: "hospital", lat: 34.0, lon: 71.55 },
+];
+
 const DATA_SOURCES = [
   { key: "PEPA", name: "Pakistan Environmental Protection Agency", desc: "Primary government monitoring network" },
   { key: "Punjab EPD", name: "Punjab Environment Protection Department", desc: "Provincial monitoring stations" },
@@ -306,13 +316,13 @@ const POLLUTANT_INFO = [
 ];
 
 const FAQS = [
-  { q: "What is AirVIXIV?", a: "AirVIXIV is Pakistan's real-time air quality monitoring platform. It combines live atmospheric data with clear, actionable health guidance for cities across the country." },
-  { q: "Where does the live data come from?", a: "Current readings stream live from a global real-time atmospheric monitoring feed (refreshed automatically every 10 minutes) and are categorized using NEQS / US EPA AQI breakpoints, then cross-referenced against PEPA and Punjab EPD monitoring station placement for regional accuracy. Pakistani agencies do not yet publish a public real-time API, so AirVIXIV is transparent about using the best available live feed rather than claiming a direct government feed." },
-  { q: "How does the AI location search work?", a: "Search any area, and AirVIXIV first checks known localities and live station data; for anything else it geocodes the name and estimates AQI using inverse-distance weighting from the nearest live monitoring stations — cross-checked against a direct reading when one is available." },
+  { q: "What is AirVibe?", a: "AirVibe is Pakistan's real-time air quality monitoring platform. It combines live atmospheric data with clear, actionable health guidance for cities across the country." },
+  { q: "Where does the live data come from?", a: "Current readings stream live from a global real-time atmospheric monitoring feed (refreshed automatically every 10 minutes) and are categorized using NEQS / US EPA AQI breakpoints, then cross-referenced against PEPA and Punjab EPD monitoring station placement for regional accuracy. Pakistani agencies do not yet publish a public real-time API, so AirVibe is transparent about using the best available live feed rather than claiming a direct government feed." },
+  { q: "How does the AI location search work?", a: "Search any area, and AirVibe first checks known localities and live station data; for anything else it geocodes the name and estimates AQI using inverse-distance weighting from the nearest live monitoring stations — cross-checked against a direct reading when one is available." },
   { q: "How often does the dashboard update?", a: "Automatically, about every 10 minutes. You can also force an immediate refresh from the Settings tab." },
   { q: "How do I set an AQI alert for a place I care about?", a: "Open the Alerts tab, tap “Add Alert”, give it a tag like Home, Gym, or School, pick the nearest city for its data feed, and set a threshold AQI. You can also save a place straight from a Map search." },
-  { q: "How do I contact support?", a: "Email airvixiv@gmail.com or message @airvixiv on Instagram — we read every message." },
-  { q: "Can I use AirVIXIV in Urdu?", a: "Yes — toggle the language switch in Settings to move the interface between English and اردو." },
+  { q: "How do I contact support?", a: "Email airvibepk@gmail.com or message @airvibepk on Instagram — we read every message." },
+  { q: "Can I use AirVibe in Urdu?", a: "Yes — toggle the language switch in Settings to move the interface between English and اردو." },
 ];
 
 const BASELINE = {
@@ -373,14 +383,15 @@ const STRINGS = {
   dash_share: { en: "Share Data", ur: "ڈیٹا شیئر کریں" },
   dash_invite: { en: "Invite Friends", ur: "دوستوں کو مدعو کریں" },
   dash_addarea: { en: "Add Area", ur: "علاقہ شامل کریں" },
-  dash_scan: { en: "Scan to open AirVIXIV", ur: "ایئروائب کھولنے کے لیے اسکین کریں" },
+  dash_scan: { en: "Scan to open AirVibe", ur: "ایئروائب کھولنے کے لیے اسکین کریں" },
 
   map_title: { en: "Air Quality Map", ur: "ایئر کوالٹی نقشہ" },
   map_stations: { en: "monitoring stations worldwide", ur: "دنیا بھر میں نگرانی اسٹیشنز" },
   map_heatmap: { en: "Heatmap", ur: "ہیٹ میپ" },
+  map_sites: { en: "Schools & Hospitals", ur: "اسکول اور ہسپتال" },
   map_click: { en: "Click a station", ur: "اسٹیشن پر کلک کریں" },
   map_click_sub: { en: "Select any marker on the map to view detailed readings", ur: "تفصیلی ریڈنگ دیکھنے کے لیے نقشے پر کوئی نشان منتخب کریں" },
-  map_search_ph: { en: "Search an area or WAQI sensor name…", ur: "علاقہ یا سینسر کا نام تلاش کریں…" },
+  map_search_ph: { en: "Search an area (e.g. Gulberg, DHA, Clifton)…", ur: "علاقہ تلاش کریں (مثلاً گلبرگ، ڈی ایچ اے)…" },
   map_search_btn: { en: "AI Predict", ur: "پیش گوئی" },
   map_all_stations: { en: "All Stations", ur: "تمام اسٹیشنز" },
   map_save_tag: { en: "Save & Tag This Place", ur: "یہ جگہ محفوظ کریں" },
@@ -395,7 +406,7 @@ const STRINGS = {
   alerts_tab_tips: { en: "Tips", ur: "تجاویز" },
 
   settings_title: { en: "Settings", ur: "ترتیبات" },
-  settings_sub: { en: "Manage how AirVIXIV looks and notifies you.", ur: "ایئروائب کیسا دکھتا ہے اور مطلع کرتا ہے، اسے یہاں منظم کریں۔" },
+  settings_sub: { en: "Manage how AirVibe looks and notifies you.", ur: "ایئروائب کیسا دکھتا ہے اور مطلع کرتا ہے، اسے یہاں منظم کریں۔" },
   settings_appearance: { en: "APPEARANCE", ur: "ظاہری شکل" },
   settings_dark: { en: "Dark mode", ur: "ڈارک موڈ" },
   settings_dark_sub: { en: "Switch between dark and light theme", ur: "ڈارک اور لائٹ تھیم کے درمیان سوئچ کریں" },
@@ -593,16 +604,14 @@ function GlobalStyles() {
   return (
     <style>{`
       html { scroll-behavior: smooth; }
-      html, body { overscroll-behavior-y: none; }
-      body { -webkit-text-size-adjust: 100%; }
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
       /* Light mode: darken muted text that sits directly on the light page
          background for readable contrast. */
-      .light-theme .text-slate-400 { color: #0f172a; }
-      .light-theme .text-slate-500 { color: #020617; }
-      .light-theme .text-slate-300 { color: #020617; }
+      .light-theme .text-slate-400 { color: #334155; }
+      .light-theme .text-slate-500 { color: #1e293b; }
+      .light-theme .text-slate-300 { color: #0f172a; }
 
       /* ...but cards/panels keep a dark background in both themes, so
          restore the original lighter gray for text inside them. */
@@ -766,16 +775,10 @@ function useLiveAirQuality(homeCity = "Lahore") {
       });
       const dayKeys = Object.keys(byDay).slice(0, 7);
       const weekday = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("en-US", { weekday: "short" });
-      const weekly = dayKeys.map((k) => {
-  const values = byDay[k] ?? [];
-
-  return {
-    day: weekday(k),
-    aqi: values.length
-      ? Math.round(values.reduce((a, b) => a + b, 0) / values.length)
-      : null,
-  };
-});
+      const weekly = dayKeys.map((k) => ({
+        day: weekday(k),
+        aqi: Math.round(byDay[k].reduce((a, b) => a + b, 0) / byDay[k].length),
+      }));
 
       const dailyWeatherCodes = weatherRes?.daily?.weather_code || [];
       const dailyTimes = weatherRes?.daily?.time || [];
@@ -883,25 +886,12 @@ function PageTransition({ pageKey, children }) {
 /* Shared layout                                                           */
 /* ---------------------------------------------------------------------- */
 
-function LogoMark({ size = 26 }) {
-  const { mode } = useTheme();
-  const primary = mode === "dark" ? "#f8fafc" : "#0f172a";
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <polyline points="13,90 50,8 87,90" stroke="#9ca3af" strokeWidth="8.5" strokeLinecap="square" strokeLinejoin="miter" />
-      <line x1="15" y1="36" x2="15" y2="64" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" />
-      <line x1="85" y1="36" x2="85" y2="64" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" />
-      <polyline points="19,13 50,97 81,13" stroke={primary} strokeWidth="10" strokeLinecap="square" strokeLinejoin="miter" />
-    </svg>
-  );
-}
-
 function Logo({ big }) {
   return (
     <div className="flex items-center gap-2">
-      <LogoMark size={big ? 28 : 22} />
+      <Radio className="text-cyan-400" size={big ? 26 : 20} />
       <span className={`${big ? "text-2xl" : "text-xl"} font-bold tracking-tight`}>
-        Air<span className="text-cyan-400">VIXIV</span>
+        Air<span className="text-cyan-400">Vibe</span>
       </span>
     </div>
   );
@@ -968,7 +958,7 @@ function NavBar({ page, setPage, live, homeCity, setHomeCity }) {
   const t = useT();
   const dark = mode === "dark";
   return (
-    <header className={`z-20 border-b sticky top-0 backdrop-blur transition-colors duration-500 ${dark ? "border-white/5 bg-slate-950/80" : "border-slate-200 bg-white/85"}`}>
+    <header className={`relative z-20 border-b sticky top-0 backdrop-blur transition-colors duration-500 ${dark ? "border-white/5 bg-slate-950/80" : "border-slate-200 bg-white/85"}`}>
       <div className="max-w-6xl mx-auto flex items-center gap-4 px-6 py-5">
         <button onClick={() => setPage("dashboard")} className="flex-shrink-0">
           <Logo big />
@@ -987,7 +977,7 @@ function NavBar({ page, setPage, live, homeCity, setHomeCity }) {
           )}
         </div>
 
-        <nav className="flex-1 min-w-0 overflow-x-auto no-scrollbar" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x" }}>
+        <nav className="flex-1 min-w-0 overflow-x-auto no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
           <div className="flex items-center gap-6 text-sm whitespace-nowrap px-1">
             {NAV_ITEMS.map((it) => (
               <button
@@ -1025,18 +1015,18 @@ function Footer({ setPage }) {
         <div>
           <Logo big />
           <p className={`text-sm mt-4 max-w-xs ${dark ? "text-slate-400" : "text-slate-500"}`}>{t("footer_tagline")}</p>
-          <p className="text-cyan-400 font-semibold text-sm mt-4">AirVIXIV — Breathe Informed</p>
+          <p className="text-cyan-400 font-semibold text-sm mt-4">AirVibe — Breathe Informed</p>
           <div className="flex items-center gap-3 mt-5 flex-wrap">
             <a
               className={`flex items-center gap-2 text-sm border rounded-full px-3 py-2 hover:text-pink-400 hover:border-pink-400/40 transition ${dark ? "border-white/10 text-slate-300" : "border-slate-200 text-slate-500"}`}
-              href="https://www.instagram.com/airvixiv"
+              href="https://www.instagram.com/airvibepk"
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Globe size={15} /> @airvixiv
+              <Globe size={15} /> @airvibepk
             </a>
-            <a className={`flex items-center gap-2 text-sm border rounded-full px-3 py-2 hover:text-cyan-400 hover:border-cyan-400/40 transition ${dark ? "border-white/10 text-slate-300" : "border-slate-200 text-slate-500"}`} href="mailto:airvixiv@gmail.com">
-              <Mail size={15} /> airvixiv@gmail.com
+            <a className={`flex items-center gap-2 text-sm border rounded-full px-3 py-2 hover:text-cyan-400 hover:border-cyan-400/40 transition ${dark ? "border-white/10 text-slate-300" : "border-slate-200 text-slate-500"}`} href="mailto:airvibepk@gmail.com">
+              <Mail size={15} /> airvibepk@gmail.com
             </a>
           </div>
         </div>
@@ -1060,7 +1050,7 @@ function Footer({ setPage }) {
         </div>
       </div>
       <div className={`max-w-6xl mx-auto px-6 pb-8 flex flex-col md:flex-row items-center justify-between gap-3 text-xs border-t pt-6 ${dark ? "text-slate-500 border-white/5" : "text-slate-400 border-slate-200"}`}>
-        <span>© 2026 AirVIXIV. {t("footer_rights")}</span>
+        <span>© 2026 AirVibe. {t("footer_rights")}</span>
         <span className="flex items-center gap-1.5 text-cyan-400">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
           Global Air Quality Monitoring Network
@@ -1474,7 +1464,7 @@ function DashboardPage({ setPage, live, homeCity, setHomeCity }) {
           </div>
           <div className="mt-10 flex justify-center">
             <div className="inline-flex items-center gap-4 rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-left">
-              <img src={qrUrl} alt="QR code linking to AirVIXIV" width={100} height={100} className="rounded-lg bg-white p-1" />
+              <img src={qrUrl} alt="QR code linking to AirVibe" width={100} height={100} className="rounded-lg bg-white p-1" />
               <div>
                 <p className="font-semibold text-sm flex items-center gap-1.5"><QrCode size={14} className="text-cyan-400"/> {t("dash_scan")}</p>
                 <p className="text-xs text-slate-400 max-w-[200px] mt-1">Point a phone camera at this code to share live air quality with friends instantly.</p>
@@ -1496,7 +1486,7 @@ function MapPage({ live, places, setPlaces }) {
   const [filter, setFilter] = useState("All");
   const [selected, setSelected] = useState(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
-  const [showCityStations, setShowCityStations] = useState(true);
+  const [showSites, setShowSites] = useState(false);
   const [showWaqi, setShowWaqi] = useState(false);
   const [waqiStations, setWaqiStations] = useState([]);
   const [waqiStatus, setWaqiStatus] = useState("idle");
@@ -1542,41 +1532,11 @@ function MapPage({ live, places, setPlaces }) {
     return s.aqi >= lo && s.aqi <= hi;
   });
 
-  const q = query.trim().toLowerCase();
-  const listedStations = showCityStations ? (q ? filtered.filter((s) => s.city.toLowerCase().includes(q) || s.label.toLowerCase().includes(q)) : filtered) : [];
-  const listedWaqi = q ? waqiStations.filter((s) => s.name.toLowerCase().includes(q)) : showWaqi ? waqiStations : [];
-
   const handleSearch = async () => {
     if (!query.trim()) return;
     setSearching(true);
     setSearchResult(null);
     setShowTagForm(false);
-
-    // First, check WAQI sensors by name (fetching them on demand if we
-    // haven't already loaded the layer).
-    let waqiPool = waqiStations;
-    if (waqiStatus === "idle") {
-      setWaqiStatus("loading");
-      const stations = await fetchWaqiStations(minLat, minLng, maxLat, maxLng);
-      if (stations) {
-        waqiPool = stations;
-        setWaqiStations(stations);
-        setWaqiStatus("ok");
-      } else {
-        setWaqiStatus("error");
-      }
-    }
-    const q = query.trim().toLowerCase();
-    const waqiHit = waqiPool.find((s) => s.name.toLowerCase().includes(q));
-    if (waqiHit) {
-      setSearchResult({ name: waqiHit.name, lat: waqiHit.lat, lon: waqiHit.lon, aqi: waqiHit.aqi, method: "waqi" });
-      setShowWaqi(true);
-      setTagName(waqiHit.name.split(",")[0]);
-      setTagThreshold(150);
-      setSearching(false);
-      return;
-    }
-
     const loc = await searchLocation(query);
     if (!loc) {
       setSearchResult({ error: true });
@@ -1612,6 +1572,8 @@ function MapPage({ live, places, setPlaces }) {
     setTimeout(() => setSavedMsg(false), 2500);
   };
 
+  const nearestCityAqi = (lat, lon) => predictAqiAt(lat, lon, live.cities);
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-14">
       <Reveal>
@@ -1621,7 +1583,7 @@ function MapPage({ live, places, setPlaces }) {
             <p className="text-slate-400 text-sm mt-1">{stations.length} {t("map_stations")}</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-1 bg-slate-900/60 border border-white/10 rounded-full p-1 overflow-x-auto no-scrollbar" style={{ touchAction: "pan-x" }}>
+            <div className="flex items-center gap-1 bg-slate-900/60 border border-white/10 rounded-full p-1 overflow-x-auto no-scrollbar">
               {["All", "Good", "Moderate", "Unhealthy", "Hazardous"].map((f) => (
                 <button key={f} onClick={() => setFilter(f)} className={`text-sm px-4 py-1.5 rounded-full transition flex-shrink-0 ${filter === f ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>{f}</button>
               ))}
@@ -1630,8 +1592,8 @@ function MapPage({ live, places, setPlaces }) {
               <button onClick={() => setShowHeatmap((v) => !v)} className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition ${showHeatmap ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>
                 <Layers size={13} /> {t("map_heatmap")}
               </button>
-              <button onClick={() => setShowCityStations((v) => !v)} className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition ${showCityStations ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>
-                <MapPin size={13} /> City Stations
+              <button onClick={() => setShowSites((v) => !v)} className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition ${showSites ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>
+                <School size={13} /> {t("map_sites")}
               </button>
               <button onClick={toggleWaqi} className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition ${showWaqi ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>
                 <Radio size={13} className={waqiStatus === "loading" ? "animate-pulse" : ""} /> WAQI Sensors
@@ -1672,11 +1634,9 @@ function MapPage({ live, places, setPlaces }) {
                       <span className={`text-xs px-3 py-1 rounded-full border ${badgeClasses(searchResult.aqi)}`}>{aqiLabel(searchResult.aqi)}</span>
                     </div>
                     <p className="text-[11px] text-slate-500 mt-2 flex items-center gap-1.5">
-                      {searchResult.method === "waqi" ? <Radio size={11} className="text-cyan-400" /> : <Brain size={11} className="text-cyan-400" />}
+                      <Brain size={11} className="text-cyan-400" />
                       {searchResult.method === "live"
                         ? "Live sensor reading"
-                        : searchResult.method === "waqi"
-                        ? "Live WAQI monitoring station"
                         : searchResult.detail
                         ? `AI-predicted using ${searchResult.detail.stationsUsed} nearby stations (nearest: ${searchResult.detail.nearestName}, ~${searchResult.detail.nearestKm} km) · ${searchResult.detail.confidence} confidence`
                         : "AI-predicted — interpolated from nearby monitoring stations"}
@@ -1749,6 +1709,19 @@ function MapPage({ live, places, setPlaces }) {
                   <div key={`heat-${s.id}`} className="absolute rounded-full pointer-events-none" style={{ left: `${x}%`, top: `${y}%`, width: 160, height: 160, transform: "translate(-50%,-50%)", background: `radial-gradient(circle, ${c}55 0%, ${c}22 40%, transparent 70%)`, filter: "blur(6px)" }} />
                 );
               })}
+              {showSites && SENSITIVE_SITES.map((site, i) => {
+                const { x, y } = toXY(site.lat, site.lon);
+                const siteAqi = nearestCityAqi(site.lat, site.lon);
+                const c = aqiColor(siteAqi);
+                const SiteIcon = site.type === "school" ? School : Stethoscope;
+                return (
+                  <button key={`site-${i}`} onClick={() => setSelected({ city: site.type === "school" ? "School" : "Hospital", label: site.name, aqi: siteAqi })} style={{ left: `${x}%`, top: `${y}%`, position: "absolute", transform: "translate(-50%,-50%)" }}>
+                    <span className="flex items-center justify-center rounded-full border-2 bg-slate-950" style={{ width: 20, height: 20, borderColor: c }}>
+                      <SiteIcon size={11} style={{ color: c }} />
+                    </span>
+                  </button>
+                );
+              })}
               {showWaqi && waqiStations.map((s) => {
                 const { x, y } = toXY(s.lat, s.lon);
                 const c = aqiColor(s.aqi);
@@ -1770,7 +1743,7 @@ function MapPage({ live, places, setPlaces }) {
                   </div>
                 );
               })()}
-              {showCityStations && filtered.map((s) => {
+              {filtered.map((s) => {
                 const { x, y } = toXY(s.lat, s.lon);
                 const c = aqiColor(s.aqi);
                 return (
@@ -1813,23 +1786,12 @@ function MapPage({ live, places, setPlaces }) {
           <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-5">
             <p className="text-xs font-bold tracking-widest text-cyan-400 mb-3 flex items-center gap-1.5"><Search size={12}/> {t("map_all_stations")}</p>
             <div className="space-y-3 max-h-64 overflow-auto pr-1">
-              {listedStations.map((s) => (
+              {filtered.map((s) => (
                 <button key={s.id} onClick={() => setSelected(s)} className="w-full flex items-center justify-between text-sm hover:bg-white/5 rounded-lg px-2 py-2 transition">
                   <span className="flex items-center gap-2 text-left"><span className="w-2 h-2 rounded-full" style={{background: aqiColor(s.aqi)}}/><span><span className="font-semibold block">{s.city}</span><span className="text-slate-500 text-xs">{s.label}</span></span></span>
                   <span className="font-bold" style={{ color: aqiColor(s.aqi) }}>{s.aqi ?? "—"}</span>
                 </button>
               ))}
-              {listedWaqi.map((s) => (
-                <button key={`waqi-${s.uid}`} onClick={() => setSelected({ city: "WAQI Sensor", label: s.name, aqi: s.aqi })} className="w-full flex items-center justify-between text-sm hover:bg-white/5 rounded-lg px-2 py-2 transition">
-                  <span className="flex items-center gap-2 text-left"><Radio size={11} className="text-slate-500 flex-shrink-0" /><span><span className="font-semibold block">{s.name}</span><span className="text-slate-500 text-xs">WAQI Sensor</span></span></span>
-                  <span className="font-bold" style={{ color: aqiColor(s.aqi) }}>{s.aqi ?? "—"}</span>
-                </button>
-              ))}
-              {listedStations.length === 0 && listedWaqi.length === 0 && (
-                <p className="text-xs text-slate-500 px-2 py-3">
-                  {q ? "No matching station or sensor." : "No stations to show."}
-                </p>
-              )}
             </div>
           </div>
         </Reveal>
@@ -2069,7 +2031,7 @@ function AlertsPage({ live, places, setPlaces }) {
             <h1 className="text-2xl font-bold">{t("alerts_title")}</h1>
             <p className="text-orange-400 text-sm font-medium mt-1">{unread} {t("alerts_unread")}</p>
           </div>
-          <div className="flex items-center gap-1 bg-slate-900/60 border border-white/10 rounded-full p-1 overflow-x-auto no-scrollbar" style={{ touchAction: "pan-x" }}>
+          <div className="flex items-center gap-1 bg-slate-900/60 border border-white/10 rounded-full p-1 overflow-x-auto no-scrollbar">
             {[["alerts", t("alerts_tab_alerts")], ["notifications", `${t("alerts_tab_notifications")} (${unread})`], ["tips", t("alerts_tab_tips")]].map(([k, l]) => (
               <button key={k} onClick={() => setTab(k)} className={`text-sm px-4 py-1.5 rounded-full transition flex-shrink-0 ${tab === k ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>{l}</button>
             ))}
@@ -2194,7 +2156,7 @@ function AboutPage() {
           <div className="w-14 h-14 rounded-2xl bg-slate-900/60 border border-white/10 flex items-center justify-center mx-auto mb-6">
             <Wind className="text-cyan-400" size={24} />
           </div>
-          <h1 className="text-4xl font-bold">About AirVIXIV</h1>
+          <h1 className="text-4xl font-bold">About AirVibe</h1>
           <p className="text-slate-400 mt-4">A real-time air quality monitoring platform that began in Pakistan and now covers cities worldwide, built to help everyone breathe informed.</p>
         </Reveal>
       </section>
@@ -2207,7 +2169,7 @@ function AboutPage() {
               <h2 className="text-lg font-bold">Our Mission</h2>
             </div>
             <p className="text-slate-300 leading-relaxed mb-4">
-              AirVIXIV started in Pakistan to address a critical gap in the country's environmental awareness
+              AirVibe started in Pakistan to address a critical gap in the country's environmental awareness
               infrastructure — with Lahore consistently ranking among the world's most polluted cities and millions
               of Pakistanis exposed to hazardous air quality daily, we believe access to real-time, accurate air
               quality data is a public health necessity, not a luxury. That belief doesn't stop at any one border,
@@ -2262,7 +2224,7 @@ function AboutPage() {
             { icon: MapIcon, title: "Interactive Pollution Map", text: "Station-by-station air quality across the country on one map." },
             { icon: Brain, title: "ML-Powered Forecasts", text: "7-day AQI outlook plus an extended AI-predicted outlook generated from trend modelling." },
             { icon: Layers, title: "Pollution Heatmaps", text: "Toggle a heatmap layer on the map to see pollution intensity zones at a glance." },
-            { icon: Radio, title: "WAQI Sensor Layer", text: "Toggle on live WAQI monitoring stations worldwide, searchable alongside our curated city list." },
+            { icon: School, title: "School & Hospital Indicators", text: "Sensitive-site markers flag air quality risk near schools and hospitals." },
             { icon: Search, title: "AI Location Search", text: "Search any area and get an AI-predicted AQI, cross-checked against nearby stations." },
             { icon: Bell, title: "Custom Tagged Alerts", text: "Save and tag any place — Home, Gym, School — and get notified when it turns unhealthy." },
             { icon: Languages, title: "English / Urdu", text: "Switch the entire interface language from Settings." },
@@ -2311,11 +2273,11 @@ function AboutPage() {
             <h2 className="text-2xl font-bold mb-2">Get in Touch</h2>
             <p className="text-slate-400 mb-6">Questions, partnerships, or data contributions? We'd love to hear from you.</p>
             <div className="flex items-center justify-center gap-4 flex-wrap">
-              <a href="mailto:airvixiv@gmail.com" className="flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-slate-900 font-semibold px-6 py-3 rounded-full transition">
-                <Mail size={16} /> airvixiv@gmail.com
+              <a href="mailto:airvibepk@gmail.com" className="flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-slate-900 font-semibold px-6 py-3 rounded-full transition">
+                <Mail size={16} /> airvibepk@gmail.com
               </a>
-              <a href="https://www.instagram.com/airvixiv" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 border border-pink-400/30 text-pink-400 font-semibold px-6 py-3 rounded-full hover:bg-pink-400/10 transition">
-                <Globe size={16} /> @airvixiv
+              <a href="https://www.instagram.com/airvibepk" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 border border-pink-400/30 text-pink-400 font-semibold px-6 py-3 rounded-full hover:bg-pink-400/10 transition">
+                <Globe size={16} /> @airvibepk
               </a>
             </div>
           </div>
@@ -2403,7 +2365,7 @@ function HelpPage() {
     <div className="max-w-3xl mx-auto px-6 py-14">
       <Reveal>
         <div className="flex items-center gap-2 mb-2"><HelpCircle className="text-cyan-400" size={20}/><h1 className="text-2xl font-bold">Help Center</h1></div>
-        <p className="text-slate-400 text-sm mb-10">Frequently asked questions about AirVIXIV.</p>
+        <p className="text-slate-400 text-sm mb-10">Frequently asked questions about AirVibe.</p>
       </Reveal>
 
       <div className="space-y-3">
@@ -2429,7 +2391,7 @@ function HelpPage() {
         <div className="mt-10 bg-slate-900/60 border border-white/10 rounded-2xl p-8 text-center">
           <p className="font-semibold mb-1">Still need help?</p>
           <p className="text-sm text-slate-400 mb-5">Our team usually replies within a day.</p>
-          <a href="mailto:airvixiv@gmail.com" className="inline-flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-slate-900 font-semibold px-6 py-3 rounded-full transition">
+          <a href="mailto:airvibepk@gmail.com" className="inline-flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-slate-900 font-semibold px-6 py-3 rounded-full transition">
             <Mail size={16} /> Contact Support
           </a>
         </div>
