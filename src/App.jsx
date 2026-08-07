@@ -592,25 +592,43 @@ function useLanguage() {
 function GlobalStyles() {
   return (
     <style>{`
-      /* Prevent the entire website from sliding sideways on mobile */
+      /* =========================================================
+         GLOBAL MOBILE / PAGE SCROLL FIXES
+         ========================================================= */
+
       html {
         scroll-behavior: smooth;
         width: 100%;
         max-width: 100%;
         overflow-x: hidden;
+
+        /* Prevent the white/gray overscroll area */
+        overscroll-behavior-y: none;
       }
 
       body {
         width: 100%;
         max-width: 100%;
+        min-height: 100vh;
+        min-height: 100dvh;
         margin: 0;
         overflow-x: hidden;
+
+        /* Default light-mode background */
+        background: #ffffff;
+
+        /* Prevent the page itself from rubber-banding */
+        overscroll-behavior-y: none;
       }
 
       #root {
         width: 100%;
         max-width: 100%;
+        min-height: 100vh;
+        min-height: 100dvh;
         overflow-x: hidden;
+
+        background: #ffffff;
       }
 
       *,
@@ -626,6 +644,7 @@ function GlobalStyles() {
         max-width: 100%;
       }
 
+      /* Hide scrollbars where the app intentionally uses scrolling */
       .no-scrollbar::-webkit-scrollbar {
         display: none;
       }
@@ -633,6 +652,63 @@ function GlobalStyles() {
       .no-scrollbar {
         -ms-overflow-style: none;
         scrollbar-width: none;
+      }
+
+
+      /* =========================================================
+         DARK MODE
+         ========================================================= */
+
+      html.dark,
+      body.dark,
+      #root.dark {
+        background: #020617;
+      }
+
+      /* If your app uses a data-theme attribute */
+      html[data-theme="dark"],
+      html[data-theme="dark"] body,
+      html[data-theme="dark"] #root {
+        background: #020617;
+      }
+
+
+      /* =========================================================
+         MOBILE NAVIGATION
+         Keep the navigation horizontal instead of wrapping
+         vertically.
+         ========================================================= */
+
+      @media (max-width: 768px) {
+
+        /* Prevent the navigation/header from creating
+           horizontal page overflow */
+        header {
+          max-width: 100%;
+          overflow: hidden;
+        }
+
+        /* Navigation containers */
+        nav {
+          max-width: 100%;
+          overflow-x: auto;
+          overflow-y: hidden;
+          white-space: nowrap;
+
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+
+        nav::-webkit-scrollbar {
+          display: none;
+        }
+
+        /* Keep navigation items on one horizontal line */
+        nav a,
+        nav button {
+          flex-shrink: 0;
+          white-space: nowrap;
+        }
       }
     `}</style>
   );
@@ -1223,7 +1299,7 @@ function NavBar({ page, setPage, live, homeCity, setHomeCity }) {
   const t = useT();
   const dark = mode === "dark";
   return (
-    <header className={`z-20 border-b sticky top-0 backdrop-blur transition-colors duration-500 ${dark ? "border-white/5 bg-slate-950/80" : "border-slate-200 bg-white/85"}`}>
+    <header className={`z-50 border-b sticky top-0 backdrop-blur transition-colors duration-500 ${dark ? "border-white/5 bg-slate-950/80" : "border-slate-200 bg-white/85"}`}>
       <div className="max-w-6xl mx-auto flex items-center gap-4 px-6 py-5">
         <button onClick={() => setPage("dashboard")} className="flex-shrink-0">
           <Logo big />
@@ -1242,7 +1318,14 @@ function NavBar({ page, setPage, live, homeCity, setHomeCity }) {
           )}
         </div>
 
-        <nav className="flex-1 min-w-0 overflow-x-auto no-scrollbar" style={{  WebkitOverflowScrolling: "touch" }}
+        <nav className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden no-scrollbar"
+         style={{
+           WebkitOverflowScrolling: "touch",
+           touchAction: "pan-x",
+           overscrollBehaviorX: "contain",
+           overscrollBehaviorY: "none", 
+          }}
+
 >
           <div className="flex items-center gap-6 text-sm whitespace-nowrap px-1">
             {NAV_ITEMS.map((it) => (
