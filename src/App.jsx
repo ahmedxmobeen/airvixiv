@@ -592,17 +592,13 @@ function useLanguage() {
 function GlobalStyles() {
   return (
     <style>{`
-      /* =========================================================
-         GLOBAL MOBILE / PAGE SCROLL FIXES
-         ========================================================= */
-
       html {
-        scroll-behavior: smooth;
         width: 100%;
         max-width: 100%;
+        margin: 0;
+        padding: 0;
         overflow-x: hidden;
-
-        /* Prevent the white/gray overscroll area */
+        background: #020617;
         overscroll-behavior-y: none;
       }
 
@@ -610,14 +606,10 @@ function GlobalStyles() {
         width: 100%;
         max-width: 100%;
         min-height: 100vh;
-        min-height: 100dvh;
         margin: 0;
+        padding: 0;
         overflow-x: hidden;
-
-        /* Default light-mode background */
-        background: #ffffff;
-
-        /* Prevent the page itself from rubber-banding */
+        background: #020617;
         overscroll-behavior-y: none;
       }
 
@@ -625,10 +617,10 @@ function GlobalStyles() {
         width: 100%;
         max-width: 100%;
         min-height: 100vh;
-        min-height: 100dvh;
+        margin: 0;
+        padding: 0;
         overflow-x: hidden;
-
-        background: #ffffff;
+        background: #020617;
       }
 
       *,
@@ -644,7 +636,6 @@ function GlobalStyles() {
         max-width: 100%;
       }
 
-      /* Hide scrollbars where the app intentionally uses scrolling */
       .no-scrollbar::-webkit-scrollbar {
         display: none;
       }
@@ -654,61 +645,10 @@ function GlobalStyles() {
         scrollbar-width: none;
       }
 
-
-      /* =========================================================
-         DARK MODE
-         ========================================================= */
-
-      html.dark,
-      body.dark,
-      #root.dark {
-        background: #020617;
-      }
-
-      /* If your app uses a data-theme attribute */
-      html[data-theme="dark"],
-      html[data-theme="dark"] body,
-      html[data-theme="dark"] #root {
-        background: #020617;
-      }
-
-
-      /* =========================================================
-         MOBILE NAVIGATION
-         Keep the navigation horizontal instead of wrapping
-         vertically.
-         ========================================================= */
-
-      @media (max-width: 768px) {
-
-        /* Prevent the navigation/header from creating
-           horizontal page overflow */
-        header {
-          max-width: 100%;
-          overflow: hidden;
-        }
-
-        /* Navigation containers */
-        nav {
-          max-width: 100%;
-          overflow-x: auto;
-          overflow-y: hidden;
-          white-space: nowrap;
-
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: none;
-        }
-
-        nav::-webkit-scrollbar {
-          display: none;
-        }
-
-        /* Keep navigation items on one horizontal line */
-        nav a,
-        nav button {
-          flex-shrink: 0;
-          white-space: nowrap;
-        }
+      /* Prevent mobile browser bounce from revealing a white background */
+      html,
+      body {
+        overscroll-behavior: none;
       }
     `}</style>
   );
