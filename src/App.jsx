@@ -1433,7 +1433,62 @@ function DashboardPage({ setPage, live, homeCity, setHomeCity }) {
   const worsening = weekly.length > 1 ? Math.round(((weekly[weekly.length - 1].aqi - weekly[0].aqi) / weekly[0].aqi) * 100) : 0;
   const markerPct = aqi != null ? Math.min(100, (aqi / 300) * 100) : 0;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=8&data=${encodeURIComponent(SITE_URL)}`;
+const handleShareData = async () => {
+  const shareText =
+    aqi != null
+      ? `AirVIXIV — ${homeCity} air quality is currently AQI ${aqi}. Check the live air quality data:`
+      : `Check live air quality data for ${homeCity} on AirVIXIV:`;
 
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: "AirVIXIV Air Quality",
+        text: shareText,
+        url: SITE_URL,
+      });
+    } catch (error) {
+      // User cancelled the share dialog — nothing to do.
+      if (error?.name !== "AbortError") {
+        console.error("Share failed:", error);
+      }
+    }
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(`${shareText} ${SITE_URL}`);
+    alert("AirVIXIV link copied to your clipboard!");
+  } catch (error) {
+    window.prompt("Copy this AirVIXIV link:", SITE_URL);
+  }
+};
+
+const handleInviteFriends = async () => {
+  const inviteText =
+    `Join me on AirVIXIV and check live air quality around the world: ${SITE_URL}`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: "Join AirVIXIV",
+        text: inviteText,
+        url: SITE_URL,
+      });
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        console.error("Invite failed:", error);
+      }
+    }
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(inviteText);
+    alert("Invitation message copied to your clipboard!");
+  } catch (error) {
+    window.prompt("Copy this invitation:", inviteText);
+  }
+};
   return (
     <div className="relative">
       <Glow />
@@ -1744,13 +1799,20 @@ function DashboardPage({ setPage, live, homeCity, setHomeCity }) {
           <h2 className="text-3xl md:text-4xl font-bold leading-tight">{t("dash_community_title")}</h2>
           <p className="text-slate-400 mt-5 max-w-xl mx-auto">{t("dash_community_sub")}</p>
           <div className="flex items-center justify-center gap-4 mt-8 flex-wrap">
-            <button className="flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-slate-900 font-semibold px-6 py-3 rounded-full transition shadow-lg shadow-cyan-500/20">
-              <Share2 size={16} /> {t("dash_share")}
-            </button>
-            <button className="flex items-center gap-2 border border-white/15 hover:border-cyan-400/50 text-slate-200 font-semibold px-6 py-3 rounded-full transition">
-              <UserPlus size={16} /> {t("dash_invite")}
-            </button>
-          </div>
+  <button
+    onClick={handleShareData}
+    className="flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-slate-900 font-semibold px-6 py-3 rounded-full transition shadow-lg shadow-cyan-500/20"
+  >
+    <Share2 size={16} /> {t("dash_share")}
+  </button>
+
+  <button
+    onClick={handleInviteFriends}
+    className="flex items-center gap-2 border border-white/15 hover:border-cyan-400/50 text-slate-200 font-semibold px-6 py-3 rounded-full transition"
+  >
+    <UserPlus size={16} /> {t("dash_invite")}
+  </button>
+</div>
           <div className="mt-10 flex justify-center">
             <div className="inline-flex items-center gap-4 rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-left">
               <img src={qrUrl} alt="QR code linking to AirVIXIV" width={100} height={100} className="rounded-lg bg-white p-1" />
@@ -1776,8 +1838,11 @@ function MapPage({ live, places, setPlaces }) {
   const [selected, setSelected] = useState(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showCityStations, setShowCityStations] = useState(true);
+  const [showCityNames, setShowCityNames] = useState(true);
   const [showWaqi, setShowWaqi] = useState(false);
+  const [showSensorLabels, setShowSensorLabels] = useState(true);
   const [waqiStations, setWaqiStations] = useState([]);
+  const [satelliteOk, setSatelliteOk] = useState(true);
   const [waqiStatus, setWaqiStatus] = useState("idle");
 
   const [query, setQuery] = useState("");
@@ -1790,9 +1855,21 @@ function MapPage({ live, places, setPlaces }) {
 
   const minLat = -58, maxLat = 78, minLng = -170, maxLng = 180;
   const toXY = (lat, lng) => ({ x: ((lng - minLng) / (maxLng - minLng)) * 100, y: 100 - ((lat - minLat) / (maxLat - minLat)) * 100 });
-  const satelliteUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${minLng},${minLat},${maxLng},${maxLat}&bboxSR=4326&imageSR=4326&size=1400,760&format=png24&f=image`;
-  const [satelliteOk, setSatelliteOk] = useState(true);
-  const [satelliteLoaded, setSatelliteLoaded] = useState(false);
+  const mapUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/export?bbox=${minLng},${minLat},${maxLng},${maxLat}&bboxSR=4326&imageSR=4326&size=1400,760&format=png24&f=image`;
+  const [mapOk, setMapOk] = useState(true);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapZoom, setMapZoom] = useState(1);
+  const zoomIn = () => {
+  setMapZoom((z) => Math.min(z + 0.25, 3));
+};
+
+const zoomOut = () => {
+  setMapZoom((z) => Math.max(z - 0.25, 1));
+};
+
+const resetZoom = () => {
+  setMapZoom(1);
+};
 
   const toggleWaqi = async () => {
     if (!showWaqi && waqiStatus === "idle") {
@@ -1912,6 +1989,17 @@ function MapPage({ live, places, setPlaces }) {
               <button onClick={() => setShowCityStations((v) => !v)} className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition ${showCityStations ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>
                 <MapPin size={13} /> City Stations
               </button>
+              <button
+              onClick={() => setShowSensorLabels((v) => !v)}
+              className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition ${
+                showSensorLabels
+                ? "bg-cyan-400 text-slate-900 font-semibold"
+                : "text-slate-300"
+                }`}
+                >
+                   <Eye size={13} />
+                   Labels
+                   </button>
               <button onClick={toggleWaqi} className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition ${showWaqi ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>
                 <Radio size={13} className={waqiStatus === "loading" ? "animate-pulse" : ""} /> WAQI Sensors
               </button>
@@ -1919,6 +2007,17 @@ function MapPage({ live, places, setPlaces }) {
           </div>
         </div>
       </Reveal>
+      <button
+  onClick={() => setShowCityNames((v) => !v)}
+  className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition ${
+    showCityNames
+      ? "bg-cyan-400 text-slate-900 font-semibold"
+      : "text-slate-300"
+  }`}
+>
+  <MapPin size={13} />
+  Names
+</button>
 
       <Reveal delay={40}>
         <div className="mt-5 bg-slate-900/60 border border-white/10 rounded-2xl p-4">
@@ -1982,85 +2081,352 @@ function MapPage({ live, places, setPlaces }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         <Reveal delay={80} className="lg:col-span-2">
-          <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-6 relative overflow-hidden" style={{ height: 480 }}>
+          <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-4 relative overflow-hidden h-[430px] lg:h-[560px]">
             <div className="absolute top-4 left-6 z-10 flex items-center gap-2">
               <span className="text-xs text-slate-400 bg-slate-950/70 px-2 py-1 rounded-full flex items-center gap-1.5"><MapPin size={12}/> {filtered.length} stations</span>
-              <span className={`text-[11px] px-2 py-1 rounded-full flex items-center gap-1.5 ${!satelliteOk ? "bg-orange-500/15 text-orange-300" : satelliteLoaded ? "bg-emerald-500/15 text-emerald-300" : "bg-slate-500/15 text-slate-300"}`}>
-                <Layers size={11}/> {!satelliteOk ? "Satellite unavailable here" : satelliteLoaded ? "Satellite loaded" : "Satellite loading…"}
-              </span>
+              
               {showWaqi && (
                 <span className={`text-[11px] px-2 py-1 rounded-full flex items-center gap-1.5 ${waqiStatus === "error" ? "bg-orange-500/15 text-orange-300" : waqiStatus === "ok" ? "bg-emerald-500/15 text-emerald-300" : "bg-slate-500/15 text-slate-300"}`}>
                   <Radio size={11}/> {waqiStatus === "error" ? "WAQI sensors unavailable here" : waqiStatus === "ok" ? `${waqiStations.length} WAQI sensors loaded` : "Loading WAQI sensors…"}
                 </span>
               )}
             </div>
-            <div className="absolute top-4 right-6 flex flex-col gap-2">
-              <button className="w-8 h-8 rounded-lg bg-slate-800 border border-white/10 flex items-center justify-center text-cyan-400"><ZoomIn size={14}/></button>
-              <button className="w-8 h-8 rounded-lg bg-slate-800 border border-white/10 flex items-center justify-center text-cyan-400"><ZoomOut size={14}/></button>
-              <button className="w-8 h-8 rounded-lg bg-slate-800 border border-white/10 flex items-center justify-center text-cyan-400"><Navigation size={14}/></button>
-            </div>
-            <div className="absolute inset-6 mt-10 rounded-xl border border-cyan-400/10 overflow-hidden">
-              {satelliteOk && (
-                <img
-                  src={satelliteUrl}
-                  alt="Satellite map of Pakistan"
-                  className="absolute inset-0 w-full h-full"
-                  style={{ objectFit: "fill" }}
-                  onLoad={() => setSatelliteLoaded(true)}
-                  onError={() => setSatelliteOk(false)}
-                />
-              )}
-              <div className="absolute inset-0" style={{ background: satelliteOk ? "rgba(2,6,23,0.55)" : "transparent" }} />
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none">
-                {[-120, -60, 0, 60, 120].map((lon) => {
-                  const { x } = toXY(0, lon);
-                  return <line key={`lon${lon}`} x1={x} y1={0} x2={x} y2={100} stroke="rgba(34,211,238,0.12)" strokeWidth="0.15" />;
-                })}
-                {[-40, 0, 40].map((lat) => {
-                  const { y } = toXY(lat, 0);
-                  return <line key={`lat${lat}`} x1={0} y1={y} x2={100} y2={y} stroke="rgba(34,211,238,0.12)" strokeWidth="0.15" />;
-                })}
-              </svg>
-              {showHeatmap && filtered.map((s) => {
-                const { x, y } = toXY(s.lat, s.lon);
-                const c = aqiColor(s.aqi);
-                return (
-                  <div key={`heat-${s.id}`} className="absolute rounded-full pointer-events-none" style={{ left: `${x}%`, top: `${y}%`, width: 160, height: 160, transform: "translate(-50%,-50%)", background: `radial-gradient(circle, ${c}55 0%, ${c}22 40%, transparent 70%)`, filter: "blur(6px)" }} />
-                );
-              })}
-              {showWaqi && waqiStations.map((s) => {
-                const { x, y } = toXY(s.lat, s.lon);
-                const c = aqiColor(s.aqi);
-                return (
-                  <button
-                    key={`waqi-${s.uid}`}
-                    onClick={() => setSelected({ city: "WAQI Sensor", label: s.name, aqi: s.aqi })}
-                    style={{ left: `${x}%`, top: `${y}%`, position: "absolute", transform: "translate(-50%,-50%)" }}
-                  >
-                    <span className="block rounded-full border border-slate-950" style={{ background: c, width: 7, height: 7, opacity: 0.85 }} />
-                  </button>
-                );
-              })}
-              {searchResult && !searchResult.error && (() => {
-                const { x, y } = toXY(searchResult.lat, searchResult.lon);
-                return (
-                  <div style={{ left: `${x}%`, top: `${y}%`, position: "absolute", transform: "translate(-50%,-100%)" }}>
-                    <MapPin size={26} className="text-cyan-300 drop-shadow-lg" fill="#0891b2" />
-                  </div>
-                );
-              })()}
-              {showCityStations && filtered.map((s) => {
-                const { x, y } = toXY(s.lat, s.lon);
-                const c = aqiColor(s.aqi);
-                return (
-                  <button key={s.id} onClick={() => setSelected(s)} style={{ left: `${x}%`, top: `${y}%`, position: "absolute", transform: "translate(-50%,-50%)" }} className="group">
-                    <span className="absolute inset-0 rounded-full animate-ping opacity-40" style={{ background: c, width: 22, height: 22, left: -3, top: -3 }} />
-                    <span className="relative flex items-center justify-center rounded-full border-2 border-slate-950" style={{ background: c, width: 16, height: 16 }} />
-                    <span className="absolute left-1/2 -translate-x-1/2 top-5 whitespace-nowrap text-[11px] font-semibold" style={{ color: c }}>{s.aqi ?? "—"}</span>
-                  </button>
-                );
-              })}
-            </div>
+            
+            <div className="absolute inset-0 overflow-hidden rounded-2xl">
+  <div
+    className="absolute inset-0"
+    style={{
+      transform: `scale(${mapZoom})`,
+      transformOrigin: "center center",
+      transition: "transform 0.3s ease",
+    }}
+  >
+
+  {/* Satellite map */}
+  {mapOk && (
+  <img
+    src={mapUrl}
+    alt="Air quality street map"
+    className="absolute inset-0 w-full h-full"
+    style={{
+      objectFit: "cover",
+      filter: "saturate(0.85) brightness(0.78)",
+    }}
+    onLoad={() => setMapLoaded(true)}
+    onError={() => setMapOk(false)}
+  />
+)}
+
+{/* Dark glass overlay */}
+<div
+  className="absolute inset-0 pointer-events-none"
+  style={{
+    background:
+      "linear-gradient(180deg, rgba(2,6,23,0.12), rgba(2,6,23,0.28))",
+  }}
+/>
+
+{/* Pollution zones */}
+<div className="absolute inset-0 pointer-events-none overflow-hidden">
+
+  <div
+    className="absolute rounded-full"
+    style={{
+      left: "32%",
+      top: "18%",
+      width: "38%",
+      height: "48%",
+      background:
+        "radial-gradient(circle, rgba(20,184,166,0.38) 0%, rgba(20,184,166,0.20) 45%, rgba(20,184,166,0) 75%)",
+      filter: "blur(8px)",
+    }}
+  />
+
+  <div
+    className="absolute rounded-full"
+    style={{
+      left: "42%",
+      top: "30%",
+      width: "30%",
+      height: "40%",
+      background:
+        "radial-gradient(circle, rgba(34,211,238,0.30) 0%, rgba(20,184,166,0.16) 50%, transparent 75%)",
+      filter: "blur(10px)",
+    }}
+  />
+
+  <div
+    className="absolute rounded-full"
+    style={{
+      left: "18%",
+      top: "42%",
+      width: "28%",
+      height: "32%",
+      background:
+        "radial-gradient(circle, rgba(250,204,21,0.22) 0%, rgba(250,204,21,0.08) 45%, transparent 75%)",
+      filter: "blur(12px)",
+    }}
+  />
+
+</div>
+  {/* Subtle geographic grid */}
+  <svg
+    viewBox="0 0 100 100"
+    preserveAspectRatio="none"
+    className="absolute inset-0 w-full h-full pointer-events-none opacity-50"
+  >
+    {[-120, -60, 0, 60, 120].map((lon) => {
+      const { x } = toXY(0, lon);
+
+      return (
+        <line
+          key={`lon-${lon}`}
+          x1={x}
+          y1="0"
+          x2={x}
+          y2="100"
+          stroke="rgba(103,232,249,0.10)"
+          strokeWidth="0.12"
+        />
+      );
+    })}
+
+    {[-40, 0, 40].map((lat) => {
+      const { y } = toXY(lat, 0);
+
+      return (
+        <line
+          key={`lat-${lat}`}
+          x1="0"
+          y1={y}
+          x2="100"
+          y2={y}
+          stroke="rgba(103,232,249,0.10)"
+          strokeWidth="0.12"
+        />
+      );
+    })}
+  </svg>
+
+<div className="absolute top-4 right-4 z-50 flex flex-col gap-2">
+
+  <button
+    onClick={zoomIn}
+    className="w-10 h-10 rounded-xl bg-slate-950/85 border border-white/10 backdrop-blur-xl flex items-center justify-center text-cyan-400 hover:bg-slate-800 transition"
+    title="Zoom in"
+  >
+    <ZoomIn size={16} />
+  </button>
+
+  <button
+    onClick={zoomOut}
+    className="w-10 h-10 rounded-xl bg-slate-950/85 border border-white/10 backdrop-blur-xl flex items-center justify-center text-cyan-400 hover:bg-slate-800 transition"
+    title="Zoom out"
+  >
+    <ZoomOut size={16} />
+  </button>
+
+  <button
+    onClick={resetZoom}
+    className="w-10 h-10 rounded-xl bg-slate-950/85 border border-white/10 backdrop-blur-xl flex items-center justify-center text-cyan-400 hover:bg-slate-800 transition text-xs font-bold"
+    title="Reset zoom"
+  >
+    1×
+  </button>
+
+</div>
+
+  {/* AQI heatmap */}
+  {showHeatmap &&
+    filtered.map((s) => {
+      const { x, y } = toXY(s.lat, s.lon);
+      const c = aqiColor(s.aqi);
+
+      return (
+        <div
+          key={`heat-${s.id}`}
+          className="absolute pointer-events-none"
+          style={{
+            left: `${x}%`,
+            top: `${y}%`,
+            width: 220,
+            height: 220,
+            transform: "translate(-50%, -50%)",
+            background: `
+              radial-gradient(
+                circle,
+                ${c}66 0%,
+                ${c}30 28%,
+                ${c}10 52%,
+                transparent 72%
+              )
+            `,
+            filter: "blur(8px)",
+          }}
+        />
+      );
+    })}
+
+  {/* WAQI sensors */}
+  {showWaqi &&
+    waqiStations.map((s) => {
+      const { x, y } = toXY(s.lat, s.lon);
+      const c = aqiColor(s.aqi);
+
+      return (
+        <button
+          key={`waqi-${s.uid}`}
+          onClick={() =>
+            setSelected({
+              city: "WAQI Sensor",
+              label: s.name,
+              aqi: s.aqi,
+            })
+          }
+          className="absolute z-20"
+          style={{
+            left: `${x}%`,
+            top: `${y}%`,
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <span
+            className="block rounded-full border border-white"
+            style={{
+              width: 8,
+              height: 8,
+              background: c,
+              boxShadow: `0 0 14px ${c}`,
+            }}
+          />
+        </button>
+      );
+    })}
+
+  {/* Search location */}
+  {searchResult &&
+    !searchResult.error &&
+    (() => {
+      const { x, y } = toXY(
+        searchResult.lat,
+        searchResult.lon
+      );
+
+      return (
+        <div
+          className="absolute z-40"
+          style={{
+            left: `${x}%`,
+            top: `${y}%`,
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <div
+            className="absolute rounded-full animate-ping"
+            style={{
+              width: 64,
+              height: 64,
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "#22d3ee",
+              opacity: 0.2,
+            }}
+          />
+
+          <div className="relative w-11 h-11 rounded-full bg-cyan-400 border-4 border-white shadow-[0_0_30px_rgba(34,211,238,.8)] flex items-center justify-center">
+            <MapPin
+              size={19}
+              className="text-slate-950"
+              fill="currentColor"
+            />
+          </div>
+        </div>
+      );
+    })()}
+
+  {/* City AQI markers */}
+  {showCityStations &&
+    filtered.map((s) => {
+      const { x, y } = toXY(s.lat, s.lon);
+      const c = aqiColor(s.aqi);
+      const isSelected = selected?.id === s.id;
+
+      return (
+        <button
+          key={s.id}
+          onClick={() => setSelected(s)}
+          className="absolute group z-30"
+          style={{
+            left: `${x}%`,
+            top: `${y}%`,
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+
+          {/* Glow */}
+          <span
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              width: isSelected ? 78 : 64,
+              height: isSelected ? 78 : 64,
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              background: `radial-gradient(circle, ${c}55, transparent 68%)`,
+              filter: "blur(5px)",
+            }}
+          />
+
+          {/* Pulse */}
+          <span
+            className="absolute rounded-full animate-ping pointer-events-none"
+            style={{
+              width: 34,
+              height: 34,
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              background: c,
+              opacity: 0.18,
+            }}
+          />
+
+          {/* AQI bubble */}
+          <span
+            className="relative flex flex-col items-center justify-center rounded-full border-2 transition-transform duration-200 group-hover:scale-110"
+            style={{
+              width: isSelected ? 64 : 54,
+              height: isSelected ? 64 : 54,
+              background: `${c}E8`,
+              borderColor: "rgba(255,255,255,0.9)",
+              boxShadow: `0 0 28px ${c}66`,
+            }}
+          >
+            <span className="text-white font-black leading-none text-sm">
+              {s.aqi ?? "—"}
+            </span>
+
+            <span className="text-white/80 uppercase tracking-wider text-[7px]">
+              AQI
+            </span>
+          </span>
+
+          {/* City name */}
+          {showCityNames && (
+            <span
+            className="absolute left-1/2 -translate-x-1/2 mt-2 whitespace-nowrap px-2 py-1 rounded-full bg-slate-950/85 border border-white/10 backdrop-blur-md text-[10px] font-bold text-white"
+            >
+              {s.city}
+              </span>
+            )}
+
+        </button>
+      );
+    })}
+
+</div>
+            
             <div className="absolute bottom-5 left-6 bg-slate-950/80 border border-white/10 rounded-xl p-3 text-xs space-y-1.5">
               <p className="flex items-center gap-1.5 font-bold text-cyan-400 mb-1"><Gauge size={12}/> AQI Scale</p>
               {[["Good","0-50","#22c55e"],["Moderate","51-100","#eab308"],["Unhealthy","101-150","#f97316"],["Unhealthy+","151-200","#ef4444"],["Very Unhealthy","201-300","#c026d3"],["Hazardous","301+","#7f1d1d"]].map(([l,r,c]) => (
@@ -2068,6 +2434,7 @@ function MapPage({ live, places, setPlaces }) {
               ))}
             </div>
           </div>
+         </div>
         </Reveal>
 
         <Reveal delay={160}>
@@ -2835,7 +3202,11 @@ function SettingsPage({ live }) {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <p className="text-sm font-semibold">{t("settings_autorefresh")}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{live.updatedAt ? `Last updated ${live.updatedAt.toLocaleTimeString()}` : "Fetching live data…"}</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+  {live.updatedAt
+    ? `Last updated ${new Date(live.updatedAt).toLocaleTimeString()}`
+    : "Fetching live data…"}
+</p>
             </div>
             <button onClick={handleRefresh} className="flex items-center gap-2 text-sm font-semibold bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 px-4 py-2 rounded-full hover:bg-cyan-400/20 transition">
               <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} /> {t("settings_refresh")}
