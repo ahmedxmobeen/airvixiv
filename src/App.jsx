@@ -627,7 +627,11 @@ function GlobalStyles() {
 /* (e.g. inside a sandboxed preview) so the UI still populates.           */
 /* ---------------------------------------------------------------------- */
 
-function useLiveAirQuality(homeCity = "Lahore") {
+function useLiveAirQuality() {
+  const CACHE_KEY = "airvixiv_live_air_quality_v1";
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
+
   const [state, setState] = useState({
     loading: true,
     error: null,
@@ -638,176 +642,408 @@ function useLiveAirQuality(homeCity = "Lahore") {
     updatedAt: null,
   });
 
-  const buildSimulated = (cityName) => {
-    const seed = Math.floor(Date.now() / (5 * 60 * 1000));
-    const jitter = (base, spread) => {
-      const n = Math.sin(seed * 12.9898 + base * 78.233) * 43758.5453;
-      const r = n - Math.floor(n);
-      return Math.max(0, base + (r - 0.5) * spread);
-    };
-    const hashOf = (str) => {
-      let h = 0;
-      for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 100000;
-      return h;
-    };
-    const baselineFor = (name) => {
-      if (BASELINE[name]) return BASELINE[name];
-      const h = hashOf(name);
-      const aqi = 30 + (h % 160); // plausible spread: 30-190
-      return {
-        aqi,
-        pm2_5: Math.round(aqi * 0.48 * 10) / 10,
-        pm10: Math.round(aqi * 0.76),
-        ozone: 20 + (h % 35),
-        no2: 12 + (h % 30),
-        so2: 4 + (h % 12),
-        co: 300 + (h % 600),
-      };
-    };
+  /*
+   * Fetch with timeout + useful HTTP errors.
+   * In particular, preserve HTTP 429 so we can handle rate limiting
+   * separately from other errors.
+   */
+  const fetchWithTimeout = useCallback(async (url, ms = 10000) => {
+    const controller = new AbortController();
 
-    const cities = {};
-    CITIES.forEach((c) => {
-      const b = baselineFor(c.name);
-      cities[c.name] = {
-        aqi: Math.round(jitter(b.aqi, 10)),
-        pm2_5: jitter(b.pm2_5, 8),
-        pm10: jitter(b.pm10, 12),
-        ozone: jitter(b.ozone, 6),
-        no2: jitter(b.no2, 5),
-        so2: jitter(b.so2, 3),
-        co: jitter(b.co, 60),
-      };
-    });
+    const timer = setTimeout(() => {
+      controller.abort();
+    }, ms);
 
-    const cityBase = baselineFor(cityName).aqi;
-    const ratio = cityBase / BASELINE.Lahore.aqi;
-    const weekdayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const lahoreWeekPattern = [145, 162, 178, 190, 187, 183, 187];
-    const weekly = weekdayNames.map((day, i) => ({ day, aqi: Math.round(jitter(lahoreWeekPattern[i] * ratio, 4)) }));
-
-    const forecastPattern = [187, 175, 168, 155, 160, 172, 180];
-    const forecastCodes = [2, 2, 3, 1, 0, 61, 2];
-    const dailyWeather = forecastPattern.map((v, i) => ({
-      day: i === 0 ? "Today" : weekdayNames[(new Date().getDay() + i) % 7],
-      code: forecastCodes[i],
-      aqi: Math.round(jitter(v * ratio, 4)),
-    }));
-
-    const weather = {
-      temperature_2m: jitter(34, 2),
-      relative_humidity_2m: jitter(62, 5),
-      wind_speed_10m: jitter(8, 3),
-      weather_code: 2,
-      apparent_temperature: jitter(37, 2),
-    };
-
-    return { cities, weekly, dailyWeather, weather };
-  };
-
-  const load = useCallback(async () => {
-    const home = CITIES.find((c) => c.name === homeCity) || CITIES[0];
     try {
-      const CHUNK = 40;
-      const chunks = [];
-      for (let i = 0; i < CITIES.length; i += CHUNK) chunks.push(CITIES.slice(i, i + CHUNK));
+      const response = await fetch(url, {
+        signal: controller.signal,
+        cache: "no-store",
+      });
 
-      const aqUrls = chunks.map((chunk) => {
-        const lats = chunk.map((c) => c.lat).join(",");
-        const lons = chunk.map((c) => c.lon).join(",");
-        return (
-          `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lats}&longitude=${lons}` +
-          `&current=us_aqi,pm2_5,pm10,ozone,nitrogen_dioxide,sulphur_dioxide,carbon_monoxide&timezone=auto`
+      if (!response.ok) {
+        const error = new Error(
+          `Open-Meteo request failed: ${response.status} ${response.statusText}`
         );
-      });
-      const homeHourlyUrl =
-        `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${home.lat}&longitude=${home.lon}` +
-        `&hourly=us_aqi&forecast_days=7&timezone=auto`;
-      const weatherUrl =
-        `https://api.open-meteo.com/v1/forecast?latitude=${home.lat}&longitude=${home.lon}` +
-        `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,apparent_temperature` +
-        `&daily=weather_code,temperature_2m_max&forecast_days=7&timezone=auto`;
 
-      const [aqResChunks, hourlyRes, weatherRes] = await Promise.all([
-        Promise.all(aqUrls.map((u) => fetchJsonWithTimeout(u))),
-        fetchJsonWithTimeout(homeHourlyUrl),
-        fetchJsonWithTimeout(weatherUrl),
-      ]);
+        error.status = response.status;
+        throw error;
+      }
 
-      const aqArray = [];
-      aqResChunks.forEach((res) => {
-        const arr = Array.isArray(res) ? res : [res];
-        aqArray.push(...arr);
-      });
-
-      const cities = {};
-      CITIES.forEach((c, i) => {
-        const d = aqArray[i]?.current || {};
-        cities[c.name] = {
-          aqi: d.us_aqi != null ? Math.round(d.us_aqi) : null,
-          pm2_5: d.pm2_5,
-          pm10: d.pm10,
-          ozone: d.ozone,
-          no2: d.nitrogen_dioxide,
-          so2: d.sulphur_dioxide,
-          co: d.carbon_monoxide,
-        };
-      });
-
-      const hasRealCityData = Object.values(cities).some((c) => c.aqi != null);
-      if (!hasRealCityData) throw new Error("empty response");
-
-      const times = hourlyRes?.hourly?.time || [];
-      const values = hourlyRes?.hourly?.us_aqi || [];
-      const byDay = {};
-      times.forEach((t, i) => {
-        const day = t.slice(0, 10);
-        if (!byDay[day]) byDay[day] = [];
-        if (values[i] != null) byDay[day].push(values[i]);
-      });
-      const dayKeys = Object.keys(byDay).slice(0, 7);
-      const weekday = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("en-US", { weekday: "short" });
-      const weekly = dayKeys.map((k) => {
-  const values = byDay[k] ?? [];
-
-  return {
-    day: weekday(k),
-    aqi: values.length
-      ? Math.round(values.reduce((a, b) => a + b, 0) / values.length)
-      : null,
-  };
-});
-
-      const dailyWeatherCodes = weatherRes?.daily?.weather_code || [];
-      const dailyTimes = weatherRes?.daily?.time || [];
-      const dailyWeather = dailyTimes.map((t, i) => ({
-        day: i === 0 ? "Today" : weekday(t),
-        code: dailyWeatherCodes[i],
-        aqi: weekly[i]?.aqi ?? null,
-      }));
-
-      setState({ loading: false, error: null, cities, weekly, dailyWeather, weather: weatherRes?.current || null, updatedAt: new Date() });
-    } catch (e) {
-      const sim = buildSimulated(home.name);
-      setState({
-        loading: false,
-        error:
-          "Live network requests are blocked inside this preview sandbox, so figures below are a realistic simulated feed (auto-refreshing) rather than a true live fetch. Publish the site to a normal host and the real Open-Meteo live fetch will work.",
-        cities: sim.cities,
-        weekly: sim.weekly,
-        dailyWeather: sim.dailyWeather,
-        weather: sim.weather,
-        updatedAt: new Date(),
-      });
+      return await response.json();
+    } finally {
+      clearTimeout(timer);
     }
-  }, [homeCity]);
+  }, []);
 
+  /*
+   * Read previously successful live data.
+   * This prevents the UI from immediately becoming empty when the API
+   * temporarily rate-limits us.
+   */
+  const readCache = useCallback(() => {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+
+      if (!raw) return null;
+
+      const cached = JSON.parse(raw);
+
+      if (!cached || !cached.savedAt || !cached.data) {
+        return null;
+      }
+
+      return cached;
+    } catch (error) {
+      console.warn("Could not read AirVixiv cache:", error);
+      return null;
+    }
+  }, []);
+
+  /*
+   * Save only successful LIVE data.
+   */
+  const writeCache = useCallback((data) => {
+    try {
+      localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({
+          savedAt: Date.now(),
+          data,
+        })
+      );
+    } catch (error) {
+      console.warn("Could not save AirVixiv cache:", error);
+    }
+  }, []);
+
+  /*
+   * When Open-Meteo returns 429, wait and retry.
+   * We don't retry forever because that would make the rate-limit
+   * problem worse.
+   */
+  const fetchWithRetry = useCallback(
+    async (url, attempts = 3) => {
+      let lastError = null;
+
+      for (let attempt = 0; attempt < attempts; attempt++) {
+        try {
+          return await fetchWithTimeout(url);
+        } catch (error) {
+          lastError = error;
+
+          if (error?.status !== 429) {
+            throw error;
+          }
+
+          // 2s, then 4s, then 8s
+          const delay = 2000 * Math.pow(2, attempt);
+
+          console.warn(
+            `Open-Meteo rate limited the request (429). Retrying in ${
+              delay / 1000
+            } seconds...`
+          );
+
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
+
+      throw lastError;
+    },
+    [fetchWithTimeout]
+  );
+
+  const load = useCallback(
+    async ({ force = false } = {}) => {
+      /*
+       * First use a recent successful live cache.
+       *
+       * This is especially important because your browser previously
+       * received HTTP 429 from Open-Meteo.
+       */
+      const cached = readCache();
+
+      if (
+        !force &&
+        cached &&
+        Date.now() - cached.savedAt < CACHE_TTL
+      ) {
+        setState({
+          ...cached.data,
+          loading: false,
+          error: null,
+        });
+
+        return;
+      }
+
+      /*
+       * If we have older live data, show it while a fresh request
+       * is being attempted.
+       */
+      if (cached?.data) {
+        setState({
+          ...cached.data,
+          loading: false,
+          error: "Refreshing live air-quality data...",
+        });
+      } else {
+        setState((previous) => ({
+          ...previous,
+          loading: true,
+          error: null,
+        }));
+      }
+
+      try {
+        const lats = CITIES.map((city) => city.lat).join(",");
+        const lons = CITIES.map((city) => city.lon).join(",");
+
+        /*
+         * ONE Open-Meteo air-quality request:
+         *
+         * - current AQI + pollutants for all 8 cities
+         * - hourly AQI for the same locations
+         *
+         * Lahore is CITIES[0], so the first hourly series is Lahore.
+         */
+        const airQualityUrl =
+          `https://air-quality-api.open-meteo.com/v1/air-quality` +
+          `?latitude=${lats}` +
+          `&longitude=${lons}` +
+          `&current=us_aqi,pm2_5,pm10,ozone,nitrogen_dioxide,sulphur_dioxide,carbon_monoxide` +
+          `&hourly=us_aqi` +
+          `&forecast_days=7` +
+          `&timezone=auto`;
+
+        /*
+         * ONE weather request for Lahore.
+         */
+        const weatherUrl =
+          `https://api.open-meteo.com/v1/forecast` +
+          `?latitude=31.5497` +
+          `&longitude=74.3436` +
+          `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,apparent_temperature` +
+          `&daily=weather_code,temperature_2m_max` +
+          `&forecast_days=7` +
+          `&timezone=auto`;
+
+        /*
+         * Only two requests now instead of the original three.
+         */
+        const [airQualityResult, weatherResult] = await Promise.all([
+          fetchWithRetry(airQualityUrl),
+          fetchWithRetry(weatherUrl),
+        ]);
+
+        /*
+         * Open-Meteo returns an array when multiple coordinates are
+         * supplied, and a single object for one coordinate.
+         */
+        const aqArray = Array.isArray(airQualityResult)
+          ? airQualityResult
+          : [airQualityResult];
+
+        /*
+         * Build city data from REAL API values.
+         */
+        const cities = {};
+
+        CITIES.forEach((city, index) => {
+          const current = aqArray[index]?.current || {};
+
+          cities[city.name] = {
+            aqi:
+              current.us_aqi != null
+                ? Math.round(current.us_aqi)
+                : null,
+
+            pm2_5: current.pm2_5 ?? null,
+            pm10: current.pm10 ?? null,
+            ozone: current.ozone ?? null,
+            no2: current.nitrogen_dioxide ?? null,
+            so2: current.sulphur_dioxide ?? null,
+            co: current.carbon_monoxide ?? null,
+          };
+        });
+
+        /*
+         * Make sure the API actually returned useful AQI data.
+         */
+        const hasRealCityData = Object.values(cities).some(
+          (city) => Number.isFinite(city.aqi)
+        );
+
+        if (!hasRealCityData) {
+          throw new Error(
+            "Open-Meteo returned no usable AQI values."
+          );
+        }
+
+        /*
+         * Lahore is the first city in CITIES.
+         * Extract its hourly AQI series for the Trends page.
+         */
+        const lahoreHourly =
+          aqArray[0]?.hourly || {};
+
+        const times = lahoreHourly.time || [];
+        const hourlyValues = lahoreHourly.us_aqi || [];
+
+        const byDay = {};
+
+        times.forEach((time, index) => {
+          const value = hourlyValues[index];
+
+          if (value == null || !Number.isFinite(Number(value))) {
+            return;
+          }
+
+          const day = time.slice(0, 10);
+
+          if (!byDay[day]) {
+            byDay[day] = [];
+          }
+
+          byDay[day].push(Number(value));
+        });
+
+        const weekday = (iso) =>
+          new Date(`${iso}T00:00:00`).toLocaleDateString(
+            "en-US",
+            {
+              weekday: "short",
+            }
+          );
+
+        const dayKeys = Object.keys(byDay).slice(0, 7);
+
+        const weekly = dayKeys.map((day) => {
+          const values = byDay[day];
+
+          const average =
+            values.reduce((sum, value) => sum + value, 0) /
+            values.length;
+
+          return {
+            day: weekday(day),
+            aqi: Math.round(average),
+          };
+        });
+
+        /*
+         * Weather forecast.
+         */
+        const dailyWeatherCodes =
+          weatherResult?.daily?.weather_code || [];
+
+        const dailyTimes =
+          weatherResult?.daily?.time || [];
+
+        const dailyWeather = dailyTimes.map((time, index) => ({
+          day: index === 0 ? "Today" : weekday(time),
+          code: dailyWeatherCodes[index] ?? null,
+          aqi: weekly[index]?.aqi ?? null,
+        }));
+
+        /*
+         * This is the ONLY place where successful data is stored.
+         * Therefore the cache always contains REAL API data.
+         */
+        const liveData = {
+          loading: false,
+          error: null,
+          cities,
+          weekly,
+          dailyWeather,
+          weather: weatherResult?.current || null,
+          updatedAt: new Date().toISOString(),
+        };
+
+        writeCache(liveData);
+
+        setState(liveData);
+
+        console.log(
+          "AirVixiv: live Open-Meteo data updated successfully."
+        );
+      } catch (error) {
+        console.error("AirVixiv live data request failed:", error);
+
+        /*
+         * IMPORTANT:
+         * Do NOT generate fake AQI values here.
+         *
+         * If we have previous real data, keep displaying it.
+         */
+        const cached = readCache();
+
+        if (cached?.data) {
+          let message =
+            "Live data could not be refreshed. Showing the last successful live reading.";
+
+          if (error?.status === 429) {
+            message =
+              "Open-Meteo is temporarily rate-limiting requests (429). Showing the last successful live reading. The app will try again automatically.";
+          }
+
+          setState({
+            ...cached.data,
+            loading: false,
+            error: message,
+          });
+
+          return;
+        }
+
+        /*
+         * No cached data exists yet.
+         * Show the real error rather than fake values.
+         */
+        let message =
+          error?.message ||
+          "Unable to retrieve live air-quality data.";
+
+        if (error?.status === 429) {
+          message =
+            "Open-Meteo is temporarily rate-limiting this connection (HTTP 429). Please wait a few minutes and refresh.";
+        }
+
+        setState((previous) => ({
+          ...previous,
+          loading: false,
+          error: message,
+        }));
+      }
+    },
+    [fetchWithRetry, readCache, writeCache]
+  );
+
+  /*
+   * Initial load.
+   */
   useEffect(() => {
     load();
-    const interval = setInterval(load, 10 * 60 * 1000);
+
+    const interval = setInterval(() => {
+      load({ force: true });
+    }, REFRESH_INTERVAL);
+
     return () => clearInterval(interval);
   }, [load]);
 
-  return { ...state, refresh: load };
+  /*
+   * Expose refresh() to the rest of your existing application.
+   */
+  return {
+    ...state,
+
+    /*
+     * Your existing UI can continue calling:
+     * live.refresh()
+     */
+    refresh: () => load({ force: true }),
+  };
 }
 
 /* ---------------------------------------------------------------------- */
