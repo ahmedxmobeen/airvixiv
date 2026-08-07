@@ -592,29 +592,48 @@ function useLanguage() {
 function GlobalStyles() {
   return (
     <style>{`
-      html { scroll-behavior: smooth; }
-      html, body { overscroll-behavior-y: none; }
-      body { -webkit-text-size-adjust: 100%; }
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      /* Prevent the entire website from sliding sideways on mobile */
+      html {
+        scroll-behavior: smooth;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+      }
 
-      /* Light mode: darken muted text that sits directly on the light page
-         background for readable contrast. */
-      .light-theme .text-slate-400 { color: #0f172a; }
-      .light-theme .text-slate-500 { color: #020617; }
-      .light-theme .text-slate-300 { color: #020617; }
+      body {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        overflow-x: hidden;
+      }
 
-      /* ...but cards/panels keep a dark background in both themes, so
-         restore the original lighter gray for text inside them. */
-      .light-theme [class*="bg-slate-900"] .text-slate-400,
-      .light-theme [class*="bg-slate-950"] .text-slate-400,
-      .light-theme [class*="bg-white/5"] .text-slate-400 { color: #94a3b8; }
-      .light-theme [class*="bg-slate-900"] .text-slate-500,
-      .light-theme [class*="bg-slate-950"] .text-slate-500,
-      .light-theme [class*="bg-white/5"] .text-slate-500 { color: #64748b; }
-      .light-theme [class*="bg-slate-900"] .text-slate-300,
-      .light-theme [class*="bg-slate-950"] .text-slate-300,
-      .light-theme [class*="bg-white/5"] .text-slate-300 { color: #cbd5e1; }
+      #root {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      img,
+      video,
+      svg,
+      canvas {
+        max-width: 100%;
+      }
+
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
     `}</style>
   );
 }
@@ -1223,7 +1242,8 @@ function NavBar({ page, setPage, live, homeCity, setHomeCity }) {
           )}
         </div>
 
-        <nav className="flex-1 min-w-0 overflow-x-auto no-scrollbar" style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x" }}>
+        <nav className="flex-1 min-w-0 overflow-x-auto no-scrollbar" style={{  WebkitOverflowScrolling: "touch" }}
+>
           <div className="flex items-center gap-6 text-sm whitespace-nowrap px-1">
             {NAV_ITEMS.map((it) => (
               <button
