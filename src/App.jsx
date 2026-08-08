@@ -643,6 +643,40 @@ function GlobalStyles() {
         scrollbar-width: none;
       }
 
+      /* Map controls: horizontal swipe/drag on phones, without forcing the
+         whole page wider than the viewport. */
+      .airvixiv-map-control-scroller {
+        min-width: 0;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        touch-action: pan-x;
+      }
+
+      .airvixiv-map-control-scroller::-webkit-scrollbar {
+        display: none;
+      }
+
+      .airvixiv-aqi-marker {
+        --airvixiv-marker-size: 54px;
+        --airvixiv-marker-selected-size: 64px;
+        --airvixiv-marker-glow-size: 64px;
+        --airvixiv-marker-selected-glow-size: 78px;
+      }
+
+      @media (max-width: 767px) {
+        /* Only mobile: make the AQI bubbles a little smaller so more
+           stations remain visible at once. */
+        .airvixiv-aqi-marker {
+          --airvixiv-marker-size: 48px;
+          --airvixiv-marker-selected-size: 56px;
+          --airvixiv-marker-glow-size: 56px;
+          --airvixiv-marker-selected-glow-size: 68px;
+        }
+      }
+
       /* Prevent mobile browser bounce from revealing a white background */
       html,
       body {
@@ -2015,53 +2049,49 @@ const handleMapWheel = (e) => {
   return (
     <div className="max-w-6xl mx-auto px-6 py-14">
       <Reveal>
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-2">
-          <div>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-2 min-w-0">
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold flex items-center gap-2"><MapIcon className="text-cyan-400" size={20}/> {t("map_title")}</h1>
             <p className="text-slate-400 text-sm mt-1">{stations.length} {t("map_stations")}</p>
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-1 bg-slate-900/60 border border-white/10 rounded-full p-1 overflow-x-auto no-scrollbar" style={{ touchAction: "pan-x" }}>
-              {["All", "Good", "Moderate", "Unhealthy", "Hazardous"].map((f) => (
-                <button key={f} onClick={() => setFilter(f)} className={`text-sm px-4 py-1.5 rounded-full transition flex-shrink-0 ${filter === f ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>{f}</button>
-              ))}
+
+          <div className="flex flex-col gap-3 min-w-0 w-full lg:w-auto lg:max-w-full">
+            <div className="airvixiv-map-control-scroller w-full lg:w-auto">
+              <div className="inline-flex min-w-max items-center gap-1 bg-slate-900/60 border border-white/10 rounded-full p-1">
+                {["All", "Good", "Moderate", "Unhealthy", "Hazardous"].map((f) => (
+                  <button key={f} onClick={() => setFilter(f)} className={`text-sm px-4 py-1.5 rounded-full transition flex-shrink-0 whitespace-nowrap ${filter === f ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>{f}</button>
+                ))}
+              </div>
             </div>
-            <div className="flex items-center gap-1 bg-slate-900/60 border border-white/10 rounded-full p-1">
-              <button onClick={() => setShowHeatmap((v) => !v)} className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition ${showHeatmap ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>
-                <Layers size={13} /> {t("map_heatmap")}
-              </button>
-              <button onClick={() => setShowCityStations((v) => !v)} className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition ${showCityStations ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>
-                <MapPin size={13} /> City Stations
-              </button>
-              <button
-              onClick={() => setShowSensorLabels((v) => !v)}
-              className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition ${
-                showSensorLabels
-                ? "bg-cyan-400 text-slate-900 font-semibold"
-                : "text-slate-300"
-                }`}
+
+            <div className="airvixiv-map-control-scroller w-full lg:w-auto">
+              <div className="inline-flex min-w-max items-center gap-1 bg-slate-900/60 border border-white/10 rounded-full p-1">
+                <button onClick={() => setShowHeatmap((v) => !v)} className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition flex-shrink-0 whitespace-nowrap ${showHeatmap ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>
+                  <Layers size={13} /> {t("map_heatmap")}
+                </button>
+                <button onClick={() => setShowCityStations((v) => !v)} className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition flex-shrink-0 whitespace-nowrap ${showCityStations ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>
+                  <MapPin size={13} /> City Stations
+                </button>
+                <button
+                  onClick={() => setShowSensorLabels((v) => !v)}
+                  className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition flex-shrink-0 whitespace-nowrap ${showSensorLabels ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}
                 >
-                   <Eye size={13} />
-                   Labels
-                   </button>
-              <button onClick={toggleWaqi} className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition ${showWaqi ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>
-                <Radio size={13} className={waqiStatus === "loading" ? "animate-pulse" : ""} /> WAQI Sensors
-              </button>
+                  <Eye size={13} /> Labels
+                </button>
+                <button onClick={toggleWaqi} className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition flex-shrink-0 whitespace-nowrap ${showWaqi ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}>
+                  <Radio size={13} className={waqiStatus === "loading" ? "animate-pulse" : ""} /> WAQI Sensors
+                </button>
+                <button
+                  onClick={() => setShowCityNames((v) => !v)}
+                  className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition flex-shrink-0 whitespace-nowrap ${showCityNames ? "bg-cyan-400 text-slate-900 font-semibold" : "text-slate-300"}`}
+                >
+                  <MapPin size={13} /> Names
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </Reveal>
-      <button
-  onClick={() => setShowCityNames((v) => !v)}
-  className={`flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-full transition ${
-    showCityNames
-      ? "bg-cyan-400 text-slate-900 font-semibold"
-      : "text-slate-300"
-  }`}
->
-  <MapPin size={13} />
-  Names
-</button>
 
       <Reveal delay={40}>
         <div className="mt-5 bg-slate-900/60 border border-white/10 rounded-2xl p-4">
@@ -2380,7 +2410,7 @@ const handleMapWheel = (e) => {
         <button
           key={s.id}
           onClick={() => setSelected(s)}
-          className="absolute group z-30"
+          className="airvixiv-aqi-marker absolute group z-30"
           style={{
             left: `${x}%`,
             top: `${y}%`,
@@ -2392,8 +2422,8 @@ const handleMapWheel = (e) => {
           <span
             className="absolute rounded-full pointer-events-none"
             style={{
-              width: isSelected ? 78 : 64,
-              height: isSelected ? 78 : 64,
+              width: isSelected ? "var(--airvixiv-marker-selected-glow-size)" : "var(--airvixiv-marker-glow-size)",
+              height: isSelected ? "var(--airvixiv-marker-selected-glow-size)" : "var(--airvixiv-marker-glow-size)",
               left: "50%",
               top: "50%",
               transform: "translate(-50%, -50%)",
@@ -2406,8 +2436,8 @@ const handleMapWheel = (e) => {
           <span
             className="absolute rounded-full animate-ping pointer-events-none"
             style={{
-              width: 34,
-              height: 34,
+              width: "calc(var(--airvixiv-marker-size) * 0.63)",
+              height: "calc(var(--airvixiv-marker-size) * 0.63)",
               left: "50%",
               top: "50%",
               transform: "translate(-50%, -50%)",
@@ -2420,8 +2450,8 @@ const handleMapWheel = (e) => {
           <span
             className="relative flex flex-col items-center justify-center rounded-full border-2 transition-transform duration-200 group-hover:scale-110"
             style={{
-              width: isSelected ? 64 : 54,
-              height: isSelected ? 64 : 54,
+              width: isSelected ? "var(--airvixiv-marker-selected-size)" : "var(--airvixiv-marker-size)",
+              height: isSelected ? "var(--airvixiv-marker-selected-size)" : "var(--airvixiv-marker-size)",
               background: `${c}E8`,
               borderColor: "rgba(255,255,255,0.9)",
               boxShadow: `0 0 28px ${c}66`,
