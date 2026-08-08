@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 import React, { useState, useEffect, useRef, useMemo, useCallback, useContext, createContext } from "react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -598,7 +598,9 @@ function GlobalStyles() {
         margin: 0;
         padding: 0;
         overflow-x: hidden;
+        overflow-y: auto;
         background: #020617;
+        overscroll-behavior-y: auto;
       }
 
       body {
@@ -608,7 +610,9 @@ function GlobalStyles() {
         margin: 0;
         padding: 0;
         overflow-x: hidden;
+        overflow-y: auto;
         background: #020617;
+        overscroll-behavior-y: auto;
       }
 
       #root {
@@ -618,6 +622,7 @@ function GlobalStyles() {
         margin: 0;
         padding: 0;
         overflow-x: hidden;
+        overflow-y: visible;
         background: #020617;
       }
 
@@ -643,13 +648,11 @@ function GlobalStyles() {
         scrollbar-width: none;
       }
 
-      /* Prevent mobile browser bounce from revealing a white background */
+      /* Keep normal document scrolling enabled everywhere outside interactive maps. */
       html,
       body {
         overflow-y: auto;
-        overscroll-behavior-x: none;
         overscroll-behavior-y: auto;
-        scroll-behavior: auto;
       }
     `}</style>
   );
@@ -1145,7 +1148,7 @@ function PageTransition({ pageKey, children }) {
     return () => clearTimeout(t);
   }, [pageKey]);
   return (
-    <div style={{ transition: "opacity 0.2s ease", opacity: show ? 1 : 0 }}>
+    <div style={{ transition: "opacity 0.35s ease", opacity: show ? 1 : 0 }}>
       {children}
     </div>
   );
@@ -1240,7 +1243,7 @@ function NavBar({ page, setPage, live, homeCity, setHomeCity }) {
   const t = useT();
   const dark = mode === "dark";
   return (
-    <header className={`z-50 border-b sticky top-0 backdrop-blur transition-colors duration-500 ${dark ? "border-white/5 bg-slate-950/80" : "border-slate-200 bg-white/85"}`}>
+    <header className={`relative z-[100] border-b sticky top-0 backdrop-blur transition-colors duration-500 ${dark ? "border-white/5 bg-slate-950/80" : "border-slate-200 bg-white/85"}`}>
       <div className="max-w-6xl mx-auto flex items-center gap-4 px-6 py-5">
         <button type="button" onClick={() => setPage("dashboard")} className="flex-shrink-0">
           <Logo big />
@@ -1272,6 +1275,7 @@ function NavBar({ page, setPage, live, homeCity, setHomeCity }) {
             {NAV_ITEMS.map((it) => (
               <button
                 key={it.key}
+                type="button"
                 onClick={() => setPage(it.key)}
                 className={`relative pb-1 transition-colors flex-shrink-0 ${page === it.key ? "text-cyan-400" : dark ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-800"}`}
               >
@@ -1283,7 +1287,6 @@ function NavBar({ page, setPage, live, homeCity, setHomeCity }) {
         </nav>
 
         <button
-          type="button"
           onClick={toggle}
           aria-label="Toggle theme"
           className={`flex-shrink-0 w-9 h-9 rounded-full border flex items-center justify-center transition ${dark ? "border-white/10 text-yellow-300 hover:bg-white/5" : "border-slate-200 text-slate-600 hover:bg-slate-100"}`}
@@ -1324,19 +1327,19 @@ function Footer({ setPage }) {
         <div>
           <h4 className="text-cyan-400 text-xs font-bold tracking-widest mb-4">{t("footer_platform")}</h4>
           <ul className={`space-y-3 text-sm ${dark ? "text-slate-300" : "text-slate-600"}`}>
-            <li><button className="hover:text-cyan-400" onClick={() => setPage("dashboard")}>{t("nav_dashboard")}</button></li>
-            <li><button className="hover:text-cyan-400" onClick={() => setPage("map")}>{t("nav_map")}</button></li>
-            <li><button className="hover:text-cyan-400" onClick={() => setPage("trends")}>{t("nav_trends")}</button></li>
-            <li><button className="hover:text-cyan-400" onClick={() => setPage("alerts")}>{t("nav_alerts")}</button></li>
+            <li><button type="button" className="hover:text-cyan-400" onClick={() => setPage("dashboard")}>{t("nav_dashboard")}</button></li>
+            <li><button type="button" className="hover:text-cyan-400" onClick={() => setPage("map")}>{t("nav_map")}</button></li>
+            <li><button type="button" className="hover:text-cyan-400" onClick={() => setPage("trends")}>{t("nav_trends")}</button></li>
+            <li><button type="button" className="hover:text-cyan-400" onClick={() => setPage("alerts")}>{t("nav_alerts")}</button></li>
           </ul>
         </div>
         <div>
           <h4 className="text-cyan-400 text-xs font-bold tracking-widest mb-4">{t("footer_information")}</h4>
           <ul className={`space-y-3 text-sm ${dark ? "text-slate-300" : "text-slate-600"}`}>
-            <li><button className="hover:text-cyan-400" onClick={() => setPage("about")}>{t("nav_about")}</button></li>
-            <li><button className="hover:text-cyan-400" onClick={() => setPage("guide")}>{t("nav_guide")}</button></li>
-            <li><button className="hover:text-cyan-400" onClick={() => setPage("help")}>{t("nav_help")}</button></li>
-            <li><button className="hover:text-cyan-400" onClick={() => setPage("settings")}>{t("nav_settings")}</button></li>
+            <li><button type="button" className="hover:text-cyan-400" onClick={() => setPage("about")}>{t("nav_about")}</button></li>
+            <li><button type="button" className="hover:text-cyan-400" onClick={() => setPage("guide")}>{t("nav_guide")}</button></li>
+            <li><button type="button" className="hover:text-cyan-400" onClick={() => setPage("help")}>{t("nav_help")}</button></li>
+            <li><button type="button" className="hover:text-cyan-400" onClick={() => setPage("settings")}>{t("nav_settings")}</button></li>
           </ul>
         </div>
       </div>
@@ -1881,13 +1884,10 @@ const resetZoom = () => {
 };
 
 const handleMapWheel = (e) => {
-  // The map exclusively owns the wheel: zoom only, never page scroll.
+  // Only the map surface consumes the wheel gesture; the rest of the page
+  // retains native vertical scrolling.
   e.preventDefault();
   e.stopPropagation();
-  if (e.nativeEvent) {
-    e.nativeEvent.preventDefault();
-    e.nativeEvent.stopPropagation();
-  }
 
   const rect = e.currentTarget.getBoundingClientRect();
 
@@ -2137,11 +2137,9 @@ const handleMapWheel = (e) => {
             </div>
             
             <div
-  // Let the map's wheel handler receive the event first so it can zoom.
-  // handleMapWheel prevents the event from reaching the page scroll handler.
   onWheel={handleMapWheel}
-  className="airvixiv-map-wheel-zone absolute inset-0 overflow-hidden rounded-2xl"
-  style={{ overscrollBehavior: "contain", touchAction: "none" }}
+  className="absolute inset-0 overflow-hidden rounded-2xl"
+  style={{ touchAction: "none" }}
 >
   <div
   className="absolute inset-0"
@@ -2535,8 +2533,6 @@ const handleMapWheel = (e) => {
     </div>
   );
 
-
-}
 
 /* ---------------------------------------------------------------------- */
 /* Trends page                                                             */
@@ -3146,7 +3142,6 @@ function Toggle({ checked, onChange }) {
   const trackW = 60, trackH = 32, knob = 32;
   return (
     <button
-      type="button"
       onClick={() => onChange(!checked)}
       className="relative rounded-full transition-all duration-300 flex-shrink-0"
       style={{
@@ -3169,6 +3164,7 @@ function Toggle({ checked, onChange }) {
       />
     </button>
   );
+}
 }
 
 function SettingsPage({ live }) {
@@ -3274,34 +3270,10 @@ function SettingsPage({ live }) {
 }
 
 /* ---------------------------------------------------------------------- */
-/* Page wheel scrolling                                                     */
-/* ---------------------------------------------------------------------- */
-
-function usePageWheelScrolling() {
-  useEffect(() => {
-    const handleWheel = (event) => {
-      // The map owns its wheel event so the wheel zooms the map instead of
-      // moving the document. Everything else on every page scrolls normally.
-      if (event.ctrlKey || event.target?.closest?.(".airvixiv-map-wheel-zone")) return;
-
-      const delta = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaMode === 2 ? event.deltaY * window.innerHeight : event.deltaY;
-      if (!delta) return;
-
-      event.preventDefault();
-      window.scrollBy({ top: delta, left: 0, behavior: "auto" });
-    };
-
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    return () => window.removeEventListener("wheel", handleWheel);
-  }, []);
-}
-
-/* ---------------------------------------------------------------------- */
 /* App                                                                     */
 /* ---------------------------------------------------------------------- */
 
 export default function App() {
-  usePageWheelScrolling();
   const [page, setPage] = useState("dashboard");
   const [mode, setMode] = useState("dark");
   const [lang, setLang] = useState("en");
@@ -3310,9 +3282,12 @@ export default function App() {
   const live = useLiveAirQuality(homeCity);
   const toggle = () => setMode((m) => (m === "dark" ? "light" : "dark"));
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  }, [page]);
+  const navigate = useCallback((nextPage) => {
+    setPage(nextPage);
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
+  }, []);
 
   const dark = mode === "dark";
   const rootClasses = dark ? "bg-slate-950 text-slate-100" : "bg-slate-100 text-slate-900";
@@ -3322,14 +3297,14 @@ export default function App() {
       <LanguageContext.Provider value={{ lang, setLang }}>
         <GlobalStyles />
         <div className={`min-h-screen font-sans transition-colors duration-500 ${rootClasses} ${dark ? "" : "light-theme"}`}>
-          <NavBar page={page} setPage={setPage} live={live} homeCity={homeCity} setHomeCity={setHomeCity} />
+          <NavBar page={page} setPage={navigate} live={live} homeCity={homeCity} setHomeCity={setHomeCity} />
           {live.error && (
             <div className="max-w-6xl mx-auto px-6 pt-4">
               <div className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-sm rounded-xl px-4 py-3">{live.error}</div>
             </div>
           )}
           <PageTransition pageKey={page}>
-            {page === "dashboard" && <DashboardPage setPage={setPage} live={live} homeCity={homeCity} setHomeCity={setHomeCity} />}
+            {page === "dashboard" && <DashboardPage setPage={navigate} live={live} homeCity={homeCity} setHomeCity={setHomeCity} />}
             {page === "map" && <MapPage live={live} places={places} setPlaces={setPlaces} />}
             {page === "trends" && <TrendsPage live={live} />}
             {page === "alerts" && <AlertsPage live={live} places={places} setPlaces={setPlaces} />}
@@ -3338,7 +3313,7 @@ export default function App() {
             {page === "help" && <HelpPage />}
             {page === "settings" && <SettingsPage live={live} />}
           </PageTransition>
-          <Footer setPage={setPage} />
+          <Footer setPage={navigate} />
         </div>
       </LanguageContext.Provider>
     </ThemeContext.Provider>
